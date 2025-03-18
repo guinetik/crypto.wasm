@@ -60,7 +60,8 @@
 </head>
 
 <body>
-    <h1>crypto.wasm Interactive Demo</h1>
+    <h1><strong><a href="https://github.com/guinetik/crypto.wasm" target="_blank">crypto.wasm</a></strong> Interactive
+        Demo</h1>
     <div id="errorMessage" style="display: none; color: red; font-weight: bold;"></div>
     <div class="container">
         <textarea id="inputToken" placeholder="Enter token here"></textarea>
@@ -86,7 +87,7 @@
 
         // Main function
         (async () => {
-            const wasmPath = window.location.href  + "/dist/crypto_wasm/crypto_wasm.lib.min.js";
+            const wasmPath = window.location.href + "/dist/crypto_wasm/crypto_wasm.lib.min.js";
             const errorMessage = document.getElementById("errorMessage");
 
             // Check if the WASM file exists
@@ -144,11 +145,11 @@
             const switchOperation = () => {
                 const inputTokenValue = inputToken.value.trim();
                 const outputTokenValue = outputToken.value.trim();
-                if(inputTokenValue && !outputTokenValue) {
+                if (inputTokenValue && !outputTokenValue) {
                     encrypt();
                     return;
                 }
-                if(outputTokenValue.split(":").length === 2) {
+                if (outputTokenValue.split(":").length === 2) {
                     inputToken.value = outputTokenValue;
                     outputToken.value = "";
                     decrypt();
