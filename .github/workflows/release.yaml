@@ -45,6 +45,10 @@ jobs:
           terser build/crypto_wasm/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.lib.min.js --compress --mangle
           terser js/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.min.js --compress --mangle
 
+      # Build the CLI app
+      - name: Build CLI
+        run: cargo build --release
+
       # Package the distribution files
       - name: Package distribution
         run: |
@@ -52,13 +56,17 @@ jobs:
           cp build/crypto_wasm/crypto_wasm.lib.min.js dist/crypto_wasm/
           cp build/crypto_wasm/crypto_wasm_bg.wasm dist/crypto_wasm/
           cp build/crypto_wasm/crypto_wasm.min.js dist/crypto_wasm/
+          mkdir -p dist/cli
+          cp target/release/crypto_cli dist/cli/
 
       # Upload artifacts for the release
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: crypto_wasm
-          path: dist/crypto_wasm/
+          name: release-artifacts
+          path: |
+            dist/crypto_wasm/
+            dist/cli/
 
   release:
     runs-on: ubuntu-latest
@@ -73,8 +81,8 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
-          name: crypto_wasm
-          path: dist/crypto_wasm/
+          name: release-artifacts
+          path: dist/
 
       # Create a GitHub release
       - name: Create GitHub release
@@ -88,8 +96,8 @@ jobs:
           draft: false
           prerelease: false
 
-      # Upload artifacts to the release
-      - name: Upload release assets
+      # Upload WebAssembly artifacts to the release
+      - name: Upload WebAssembly assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -99,7 +107,7 @@ jobs:
           asset_name: crypto_wasm.lib.min.js
           asset_content_type: application/javascript
 
-      - name: Upload release assets
+      - name: Upload WebAssembly assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -109,7 +117,7 @@ jobs:
           asset_name: crypto_wasm.min.js
           asset_content_type: application/javascript
 
-      - name: Upload release assets
+      - name: Upload WebAssembly assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -118,3 +126,14 @@ jobs:
           asset_path: dist/crypto_wasm/crypto_wasm_bg.wasm
           asset_name: crypto_wasm_bg.wasm
           asset_content_type: application/wasm
+
+      # Upload CLI binary to the release
+      - name: Upload CLI assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/cli/crypto_wasm_cli
+          asset_name: crypto_wasm_cli
+          asset_content_type: application/octet-stream
