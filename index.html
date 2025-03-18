@@ -6,7 +6,7 @@
     <base href="/crypto.wasm/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>cryptoWasm Demo</title>
-    <script src="./js/crypto_wasm.js"></script>
+    <script src="./dist/crypto_wasm/crypto_wasm.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -86,7 +86,7 @@
 
         // Main function
         (async () => {
-            const wasmPath = "/dist/crypto_wasm/crypto_wasm.lib.min.js";
+            const wasmPath = window.location.href  + "/dist/crypto_wasm/crypto_wasm.lib.min.js";
             const errorMessage = document.getElementById("errorMessage");
 
             // Check if the WASM file exists
