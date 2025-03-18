@@ -9,11 +9,19 @@ permissions:
 on:
   push:
     tags:
-      - "v*" # Triggers the workflow when a tag starting with "v" is pushed (e.g., v1.0.0)
+      - "v*" # Triggers on tag push (e.g., v1.0.0)
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            archive: tar.gz tar.xz tar.zst
+          - target: x86_64-pc-windows-gnu
+            archive: zip
 
     steps:
       # Check out the repository
@@ -44,47 +52,37 @@ jobs:
       - name: Run tests
         run: cargo test
 
-      # Build the WebAssembly module
+      # Build WebAssembly
       - name: Build WebAssembly
         run: |
           wasm-pack build --target web --out-dir build/crypto_wasm
           terser build/crypto_wasm/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.lib.min.js --compress --mangle
           terser js/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.min.js --compress --mangle
 
-      # Build the Linux CLI app
-      - name: Build Linux CLI
-        run: cargo build --release --target x86_64-unknown-linux-gnu
-
-      # Build the Windows CLI app
-      - name: Build Windows CLI
-        run: |
-          rustup target add x86_64-pc-windows-gnu
-          cargo build --release --target x86_64-pc-windows-gnu
-
-      # Package the distribution files
-      - name: Package distribution
-        run: |
-          mkdir -p dist/crypto_wasm
-          cp build/crypto_wasm/crypto_wasm.lib.min.js dist/crypto_wasm/
-          cp build/crypto_wasm/crypto_wasm_bg.wasm dist/crypto_wasm/
-          cp build/crypto_wasm/crypto_wasm.min.js dist/crypto_wasm/
-          mkdir -p dist/cli
-          cp target/x86_64-unknown-linux-gnu/release/crypto_cli dist/cli/crypto_cli-linux
-          cp target/x86_64-pc-windows-gnu/release/crypto_cli.exe dist/cli/crypto_cli.exe
-
-      # Upload WebAssembly artifacts (using v4)
+      # Upload WebAssembly artifacts (v4)
       - name: Upload WebAssembly artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-artifacts-wasm
-          path: dist/crypto_wasm/
+          path: build/crypto_wasm/
 
-      # Upload CLI artifacts (using v4)
+      # Build native binaries using rust-build.action
+      - name: Compile CLI for ${{ matrix.target }}
+        uses: rust-build/rust-build.action@v1.4.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          RUSTTARGET: ${{ matrix.target }}
+          ARCHIVE_TYPES: ${{ matrix.archive }}
+
+      # Upload CLI artifacts (v4)
       - name: Upload CLI artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: release-artifacts-cli
-          path: dist/cli/
+          name: release-artifacts-cli-${{ matrix.target }}
+          path: |
+            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
 
   release:
     runs-on: ubuntu-latest
@@ -95,18 +93,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Download WebAssembly artifacts (using v4)
+      # Download WebAssembly artifacts (v4)
       - name: Download WebAssembly artifacts
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-wasm
           path: dist/crypto_wasm/
 
-      # Download CLI artifacts (using v4)
-      - name: Download CLI artifacts
+      # Download CLI artifacts for Linux
+      - name: Download Linux CLI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: release-artifacts-cli
+          name: release-artifacts-cli-x86_64-unknown-linux-musl
+          path: dist/cli/
+
+      # Download CLI artifacts for Windows
+      - name: Download Windows CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-cli-x86_64-pc-windows-gnu
           path: dist/cli/
 
       # Create a GitHub release
@@ -152,24 +157,24 @@ jobs:
           asset_name: crypto_wasm_bg.wasm
           asset_content_type: application/wasm
 
-      # Upload Linux CLI binary to the release
-      - name: Upload Linux CLI assets
+      # Upload Linux CLI binary to release
+      - name: Upload Linux CLI binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cli/crypto_wasm_cli-linux
-          asset_name: crypto_wasm_cli-linux
-          asset_content_type: application/octet-stream
+          asset_path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.tar.gz
+          asset_name: crypto_cli-linux.tar.gz
+          asset_content_type: application/gzip
 
-      # Upload Windows CLI binary to the release
-      - name: Upload Windows CLI assets
+      # Upload Windows CLI binary to release
+      - name: Upload Windows CLI binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cli/crypto_wasm_cli.exe
-          asset_name: crypto_wasm_cli.exe
-          asset_content_type: application/octet-stream
+          asset_path: dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip
+          asset_name: crypto_cli-windows.zip
+          asset_content_type: application/zip
