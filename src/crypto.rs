@@ -1,96 +1,147 @@
 use wasm_bindgen::prelude::*;
+use base64::{encode, decode};
 use aes::Aes128;
 use block_modes::{BlockMode, Cbc};
 use block_modes::block_padding::Pkcs7;
-use rand::Rng;
 use hex;
+use rand::Rng;
 
-// Define o tipo de cifra AES-128 em modo CBC com preenchimento PKCS7
 type Aes128Cbc = Cbc<Aes128, Pkcs7>;
 
-// Chave secreta de 128 bits usada para criptografia e descriptografia (16 bytes)
-const SECRET_KEY: &[u8; 16] = b"thisisasecretkey";
-
-/// Criptografa o token fornecido usando AES-128 em modo CBC com um IV aleatório.
-///
-/// # Argumentos
-///
-/// * `input` - String de entrada que representa o token a ser criptografado.
-///
-/// # Retorna
-///
-/// Uma `String` que contém o IV (vetor de inicialização) e o token criptografado,
-/// codificados em hexadecimal e separados por `:` para facilitar a transmissão e armazenamento.
+#[derive(PartialEq)]
 #[wasm_bindgen]
-pub fn cypher(input: &str) -> String {
-    let token_bytes = input.as_bytes();
-
-    // Gera um IV aleatório de 16 bytes
-    let mut iv = [0u8; 16];
-    rand::thread_rng().fill(&mut iv);
-
-    // Criptografa o token
-    let encrypted_token = aes_encrypt(token_bytes, &iv);
-
-    // Concatena IV e token criptografado em hexadecimal
-    let iv_hex = hex::encode(iv);
-    let encrypted_hex = hex::encode(encrypted_token);
-    format!("{}:{}", iv_hex, encrypted_hex)
+pub enum EncryptorType {
+    Aes128,
+    Base64,
 }
 
-/// Descriptografa um token criptografado no formato `IV:encrypted_data`.
-///
-/// # Argumentos
-///
-/// * `encrypted_input` - String de entrada no formato `IV:encrypted_data`, onde `IV`
-///   é o vetor de inicialização em hexadecimal e `encrypted_data` é o token criptografado.
-///
-/// # Retorna
-///
-/// Um `Result<String, String>` onde o valor `Ok` contém o token descriptografado original,
-/// e o valor `Err` indica uma falha na descriptografia ou formato inválido.
-#[wasm_bindgen]
-pub fn decypher(encrypted_input: &str) -> Result<String, String> {
-    // Separa IV e token criptografado
-    let parts: Vec<&str> = encrypted_input.split(':').collect();
-    if parts.len() != 2 {
-        return Err("Formato inválido: esperado IV:encrypted_data".to_string());
+/// Encryption trait
+trait Encryptor {
+    fn encrypt(&self, data: &[u8], iv: &[u8]) -> Vec<u8>;
+    fn decrypt(&self, encrypted_data: &[u8], iv: &[u8]) -> Vec<u8>;
+    fn encryptor_type(&self) -> EncryptorType;
+}
+
+/// AES-128 CBC implementation
+struct Aes128Encryptor {
+    key: [u8; 16],
+}
+
+impl Aes128Encryptor {
+    fn new(secret_key: &[u8]) -> Self {
+        if secret_key.len() != 16 {
+            panic!("Secret key must be exactly 16 bytes long!");
+        }
+        let mut key = [0u8; 16];
+        key.copy_from_slice(&secret_key[..16]);
+        Self { key }
+    }
+}
+
+/// Base64 implementation
+struct Base64Encryptor;
+
+impl Encryptor for Base64Encryptor {
+    fn encrypt(&self, data: &[u8], _iv: &[u8]) -> Vec<u8> {
+        encode(data).into_bytes()
     }
 
-    let iv = hex::decode(parts[0]).map_err(|_| "Formato de IV inválido")?;
-    let encrypted_bytes = hex::decode(parts[1]).map_err(|_| "Formato de dados criptografados inválido")?;
+    fn decrypt(&self, encrypted_data: &[u8], _iv: &[u8]) -> Vec<u8> {
+        decode(encrypted_data).unwrap_or_else(|_| vec![])
+    }
 
-    // Descriptografa o token
-    let decrypted_bytes = aes_decrypt(&encrypted_bytes, &iv);
-    String::from_utf8(decrypted_bytes).map_err(|_| "Descriptografia falhou: UTF-8 inválido".to_string())
+    fn encryptor_type(&self) -> EncryptorType {
+        EncryptorType::Base64  // Return the encryptor type
+    }
 }
 
-/// Função auxiliar para criptografar dados usando AES-128 com CBC e PKCS7.
-///
-/// # Argumentos
-///
-/// * `data` - Dados em bytes a serem criptografados.
-/// * `iv` - Vetor de inicialização de 16 bytes.
-///
-/// # Retorna
-///
-/// Um `Vec<u8>` contendo os dados criptografados.
-fn aes_encrypt(data: &[u8], iv: &[u8]) -> Vec<u8> {
-    let cipher = Aes128Cbc::new_from_slices(SECRET_KEY, iv).unwrap();
-    cipher.encrypt_vec(data)
+impl Encryptor for Aes128Encryptor {
+    fn encrypt(&self, data: &[u8], iv: &[u8]) -> Vec<u8> {
+        let cipher = Aes128Cbc::new_from_slices(&self.key, iv).unwrap();
+        cipher.encrypt_vec(data)
+    }
+
+    fn decrypt(&self, encrypted_data: &[u8], iv: &[u8]) -> Vec<u8> {
+        let cipher = Aes128Cbc::new_from_slices(&self.key, iv).unwrap();
+        cipher.decrypt_vec(encrypted_data).unwrap_or_else(|_| vec![]) // Return empty Vec<u8> instead of error
+    }
+
+    fn encryptor_type(&self) -> EncryptorType {
+        EncryptorType::Aes128  // Return the encryptor type
+    }
 }
 
-/// Função auxiliar para descriptografar dados usando AES-128 com CBC e PKCS7.
-///
-/// # Argumentos
-///
-/// * `encrypted_data` - Dados criptografados em bytes.
-/// * `iv` - Vetor de inicialização de 16 bytes utilizado na criptografia.
-///
-/// # Retorna
-///
-/// Um `Vec<u8>` contendo os dados descriptografados.
-fn aes_decrypt(encrypted_data: &[u8], iv: &[u8]) -> Vec<u8> {
-    let cipher = Aes128Cbc::new_from_slices(SECRET_KEY, iv).unwrap();
-    cipher.decrypt_vec(encrypted_data).unwrap()
+/// CryptoWasm class with configurable key
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+pub struct CryptoWasm {
+    encryptor: Box<dyn Encryptor>,
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+impl CryptoWasm {
+    /// Initialize with a key and encryptor type
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
+    pub fn new(secret_key: String, encryptor_type: EncryptorType) -> CryptoWasm {
+        let encryptor: Box<dyn Encryptor> = match encryptor_type {
+            EncryptorType::Aes128 => {
+                let key_bytes = secret_key.as_bytes();
+                if key_bytes.len() != 16 {
+                    panic!("Secret key must be exactly 16 bytes long for AES-128!");
+                }
+                Box::new(Aes128Encryptor::new(key_bytes))
+            }
+            EncryptorType::Base64 => Box::new(Base64Encryptor),
+        };
+        CryptoWasm { encryptor }
+    }
+
+    /// Encrypts a string
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn cypher(&self, input: &str) -> String {
+        match self.encryptor.encryptor_type() {
+            EncryptorType::Aes128 => {
+                // AES-128 encryption logic
+                let token_bytes = input.as_bytes();
+                let mut iv = [0u8; 16];
+                rand::thread_rng().fill(&mut iv);
+                let encrypted_token = self.encryptor.encrypt(token_bytes, &iv);
+                format!("{}:{}", hex::encode(iv), hex::encode(encrypted_token))
+            }
+            EncryptorType::Base64 => {
+                // Base64 encoding logic
+                let encoded = self.encryptor.encrypt(input.as_bytes(), &[]);
+                String::from_utf8(encoded).unwrap_or_else(|_| "Encoding failed".to_string())
+            }
+        }
+    }
+
+    /// Decrypts a string
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn decypher(&self, encrypted_input: &str) -> Result<String, String> {
+        match self.encryptor.encryptor_type() {
+            EncryptorType::Aes128 => {
+                // AES-128 decryption logic
+                let parts: Vec<&str> = encrypted_input.split(':').collect();
+                if parts.len() != 2 {
+                    return Err("Invalid format: expected IV:encrypted_data".to_string());
+                }
+
+                let iv = hex::decode(parts[0]).map_err(|_| "Invalid IV format".to_string())?;
+                let encrypted_bytes = hex::decode(parts[1]).map_err(|_| "Invalid encrypted data format".to_string())?;
+
+                let decrypted_bytes = self.encryptor.decrypt(&encrypted_bytes, &iv);
+
+                if decrypted_bytes.is_empty() {
+                    return Err("Decryption failed: Invalid key or corrupted data".to_string());
+                }
+
+                String::from_utf8(decrypted_bytes).map_err(|_| "Decryption failed: Invalid UTF-8 data".to_string())
+            }
+            EncryptorType::Base64 => {
+                // Base64 decoding logic
+                let decoded = self.encryptor.decrypt(encrypted_input.as_bytes(), &[]);
+                String::from_utf8(decoded).map_err(|_| "Decoding failed: Invalid UTF-8 data".to_string())
+            }
+        }
+    }
 }

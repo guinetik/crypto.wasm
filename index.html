@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>cryptoWasm Demo</title>
-    <script src="./dist/crypto_wasm/crypto_wasm.min.js"></script>
+    <script src="./js/crypto_wasm.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -99,6 +99,7 @@
             // Initialize CryptoWasm
             const cryptoWasm = new CryptoWasmWrapper();
             await cryptoWasm.init(wasmPath);
+            const crypto = new CryptoWasm("thisisasecretkey", EncryptorType.Aes128);
 
             // Get DOM elements
             const inputToken = document.getElementById("inputToken");
@@ -115,7 +116,7 @@
                     return;
                 }
                 try {
-                    const encryptedToken = cryptoWasm.execute("cypher", token);
+                    const encryptedToken = crypto.cypher(token);
                     outputToken.value = encryptedToken;
                     inputToken.value = "";
                 } catch (error) {
@@ -131,7 +132,7 @@
                     return;
                 }
                 try {
-                    const decryptedToken = cryptoWasm.execute("decypher", token);
+                    const decryptedToken = crypto.decypher(token);
                     outputToken.value = decryptedToken;
                 } catch (error) {
                     alert("Error decrypting token: " + error);

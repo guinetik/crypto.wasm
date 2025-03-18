@@ -1,39 +1,102 @@
-use crypto_wasm::crypto;
+use crypto_wasm::crypto::{CryptoWasm, EncryptorType};
 
-/// Teste para verificar se a criptografia e a descriptografia funcionam corretamente.
-/// Criptografa um token, depois descriptografa, e verifica se o token original é restaurado.
+/// Test to verify that encryption and decryption work correctly.
+/// Encrypts a token, then decrypts it, and verifies that the original token is restored.
 #[test]
 fn test_encryption_and_decryption() {
+    let crypto = CryptoWasm::new("thisisasecretkey".to_string(), EncryptorType::Aes128);
     let original_token = "testToken";
     println!("Original token: {}", original_token);
-    // Criptografa o token
-    let encrypted = crypto::cypher(original_token);
+
+    // Encrypt the token
+    let encrypted = crypto.cypher(original_token);
     println!("Encrypted token: {}", encrypted);
-    // Descriptografa o token
-    let decrypted = crypto::decypher(&encrypted).expect("Falha na descriptografia");
+
+    // Decrypt the token
+    let decrypted = crypto.decypher(&encrypted).expect("Decryption failed");
     println!("Decrypted token: {}", decrypted);
-    // Verifica se o token descriptografado corresponde ao original
-    assert_eq!(decrypted, original_token, "O token descriptografado deve corresponder ao original");
+
+    // Verify that the decrypted token matches the original
+    assert_eq!(decrypted, original_token, "Decrypted token must match the original");
 }
 
-/// Teste para verificar a descriptografia de valores conhecidos.
-/// Criptografa um token conhecido e verifica se o valor descriptografado é o mesmo.
+/// Test to verify decryption with known values.
+/// Encrypts a known token and verifies that the decrypted value is the same.
 #[test]
 fn test_decryption_with_known_values() {
+    let crypto = CryptoWasm::new("thisisasecretkey".to_string(), EncryptorType::Aes128);
     let original_token = "knownValue";
-    let encrypted = crypto::cypher(original_token);
-    // Testa a descriptografia do token conhecido
-    let decrypted = crypto::decypher(&encrypted).expect("Falha na descriptografia");
-    // Verifica se o valor descriptografado corresponde ao valor conhecido
-    assert_eq!(decrypted, original_token, "O token descriptografado deve corresponder ao valor original para entrada conhecida");
+
+    // Encrypt the known token
+    let encrypted = crypto.cypher(original_token);
+
+    // Decrypt the token
+    let decrypted = crypto.decypher(&encrypted).expect("Decryption failed");
+
+    // Verify that the decrypted value matches the known value
+    assert_eq!(decrypted, original_token, "Decrypted token must match the original for known input");
 }
 
-/// Teste para verificar o comportamento com um formato inválido.
-/// Fornece uma string que não segue o formato `IV:encrypted_data` e espera uma falha.
+/// Test to verify behavior with an invalid format.
+/// Provides a string that does not follow the `IV:encrypted_data` format and expects a failure.
 #[test]
 fn test_invalid_decryption_format() {
+    let crypto = CryptoWasm::new("thisisasecretkey".to_string(), EncryptorType::Aes128);
     let invalid_input = "invalidFormatWithoutColon";
-    let result = crypto::decypher(invalid_input);
-    // Espera um erro devido ao formato inválido
-    assert!(result.is_err(), "Era esperado um erro para formato de entrada inválido");
+
+    // Attempt to decrypt the invalid input
+    let result = crypto.decypher(invalid_input);
+
+    // Expect an error due to invalid format
+    assert!(result.is_err(), "Expected an error for invalid input format");
+}
+
+/// Test to verify decryption failure when using an incorrect key.
+/// Encrypts with one key and attempts to decrypt with another.
+#[test]
+fn test_decryption_with_wrong_key() {
+    let crypto1 = CryptoWasm::new("thisisasecretkey".to_string(), EncryptorType::Aes128);
+    let crypto2 = CryptoWasm::new("wrongsecretkey!!".to_string(), EncryptorType::Aes128);
+
+    let original_token = "secureData";
+    let encrypted = crypto1.cypher(original_token);
+
+    let result = crypto2.decypher(&encrypted);
+
+    assert!(result.is_err(), "Expected decryption failure with incorrect key");
+}
+
+/// Test to verify Base64 encryption and decryption.
+#[test]
+fn test_base64_encryption_and_decryption() {
+    let crypto = CryptoWasm::new("".to_string(), EncryptorType::Base64); // Key is not used for Base64
+    let original_token = "testToken";
+    println!("Original token: {}", original_token);
+
+    // Encrypt the token
+    let encrypted = crypto.cypher(original_token);
+    println!("Encrypted token: {}", encrypted);
+
+    // Decrypt the token
+    let decrypted = crypto.decypher(&encrypted).expect("Decryption failed");
+    println!("Decrypted token: {}", decrypted);
+
+    // Verify that the decrypted token matches the original
+    assert_eq!(decrypted, original_token, "Decrypted token must match the original");
+}
+
+/// Test to verify Base64 decryption with known values.
+#[test]
+fn test_base64_decryption_with_known_values() {
+    let crypto = CryptoWasm::new("".to_string(), EncryptorType::Base64); // Key is not used for Base64
+    let original_token = "knownValue";
+
+    // Encrypt the known token
+    let encrypted = crypto.cypher(original_token);
+
+    // Decrypt the token
+    let decrypted = crypto.decypher(&encrypted).expect("Decryption failed");
+
+    // Verify that the decrypted value matches the known value
+    assert_eq!(decrypted, original_token, "Decrypted token must match the original for known input");
 }

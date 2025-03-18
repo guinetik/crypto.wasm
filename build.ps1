@@ -1,67 +1,72 @@
 ﻿<#
-    Este script PowerShell automatiza o processo de build, teste e empacotamento
-    de um módulo WebAssembly gerado em Rust. Ele é temporário e destinado apenas 
-    para uso local até que uma solução mais robusta seja integrada ao CI.
+    This PowerShell script automates the process of building, testing, and packaging
+    a WebAssembly module written in Rust. It is temporary and intended for local use 
+    only until a more robust solution is integrated into the CI pipeline.
 
-    Autor: Guinetik <guinetik@gmail.com>
+    Author: Guinetik <guinetik@gmail.com>
 #>
 
-# Função auxiliar para mensagens destacadas
+# Helper function to display highlighted messages
 function Write-PopLog {
     param (
         [string]$Message,
         [string]$Color = "Yellow"
     )
-    Write-Host ("`n==================== {0} ====================" -f $Message) -ForegroundColor $Color
+    Write-Host ("`n========== {0} ==========" -f $Message) -ForegroundColor $Color
 }
 
-# Etapa 1: Executar os testes do cargo para garantir que tudo está funcionando corretamente
-Write-PopLog "Executando testes com cargo..." -Color "Green"
+# **Step 1: Run cargo tests to ensure everything is working correctly**
+Write-PopLog "Running tests with cargo..." -Color "Green"
 cargo test
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "`n❌ Testes falharam! Abortando o processo de build." -ForegroundColor Red
+    Write-Host "`n❌ Tests failed! Aborting the build process." -ForegroundColor Red
     exit 1
 }
-Write-Host "`n✅ Todos os testes passaram com sucesso." -ForegroundColor Green
+Start-Sleep -Seconds 1.5
+Write-Host "`n✅ All tests passed successfully." -ForegroundColor Green
 
-# Etapa 2: Construir o módulo WebAssembly com wasm-pack
-Write-PopLog "Construindo WebAssembly com wasm-pack..." -Color "Cyan"
+# **Step 2: Build the WebAssembly module using wasm-pack**
+Write-PopLog "Building WebAssembly with wasm-pack..." -Color "Cyan"
 wasm-pack build --target web --out-dir build/crypto_wasm
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "`n❌ Falha ao executar wasm-pack build! Abortando." -ForegroundColor Red
+    Write-Host "`n❌ Failed to execute wasm-pack build! Aborting." -ForegroundColor Red
     exit 1
 }
-Write-Host "`n✅ Construção do WebAssembly concluída com sucesso." -ForegroundColor Green
+Start-Sleep -Seconds 1.5
+Write-Host "`n✅ WebAssembly build completed successfully." -ForegroundColor Green
 
-# Etapa 3: Minificar o arquivo JavaScript gerado usando terser
-Write-PopLog "Minificando arquivo JavaScript gerado com terser..." -Color "Yellow"
+# **Step 3: Minify the generated JavaScript file using terser**
+Write-PopLog "Minifying generated JavaScript file with terser..." -Color "Yellow"
 terser build/crypto_wasm/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.lib.min.js --compress --mangle -v
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "`n❌ Falha ao minificar com terser! Abortando." -ForegroundColor Red
+    Write-Host "`n❌ Failed to minify with terser! Aborting." -ForegroundColor Red
     exit 1
 }
-Write-Host "`n✅ Minificação do JavaScript concluída com sucesso." -ForegroundColor Green
+Start-Sleep -Seconds 1.5
+Write-Host "`n✅ JavaScript minification completed successfully." -ForegroundColor Green
 
-# Etapa 4: Minificar o arquivo de interface JS customizado
-Write-PopLog "Minificando arquivo de interface JavaScript personalizado..." -Color "Magenta"
+# **Step 4: Minify the custom JavaScript interface file**
+Write-PopLog "Minifying custom JavaScript interface file..." -Color "Magenta"
 terser js/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.min.js --compress --mangle
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "`n❌ Falha ao minificar crypto_wasm.js com terser! Abortando." -ForegroundColor Red
+    Write-Host "`n❌ Failed to minify crypto_wasm.js with terser! Aborting." -ForegroundColor Red
     exit 1
 }
-Write-Host "`n✅ Minificação do JS personalizado concluída com sucesso." -ForegroundColor Green
+Start-Sleep -Seconds 1.5
+Write-Host "`n✅ Custom JavaScript minification completed successfully." -ForegroundColor Green
 
-# Etapa 5: Preparar o pacote final para distribuição
-Write-PopLog "Preparando o pacote de distribuição..." -Color "Blue"
+# **Step 5: Prepare the final package for distribution**
+Write-PopLog "Preparing the distribution package..." -Color "Blue"
 if (-Not (Test-Path -Path dist)) {
     New-Item -ItemType Directory -Path dist | Out-Null
 }
 if (-Not (Test-Path -Path dist/crypto_wasm)) {
     New-Item -ItemType Directory -Path dist/crypto_wasm | Out-Null
 }
+Start-Sleep -Seconds 1.5
 
 Copy-Item build/crypto_wasm/crypto_wasm.lib.min.js dist/crypto_wasm/crypto_wasm.lib.min.js -Force
 Copy-Item build/crypto_wasm/crypto_wasm_bg.wasm dist/crypto_wasm/crypto_wasm_bg.wasm -Force
 Copy-Item build/crypto_wasm/crypto_wasm.min.js dist/crypto_wasm/crypto_wasm.min.js -Force
 
-Write-Host "`n🚀 Build concluído com sucesso. Pacote pronto em 'dist/crypto_wasm'." -ForegroundColor Green
+Write-Host "`n🚀 Build completed successfully. Package is ready in 'dist/crypto_wasm'." -ForegroundColor Green
