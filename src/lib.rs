@@ -1,0 +1,1 @@
+pub mod crypto; // Importa o módulo crypto.rs
