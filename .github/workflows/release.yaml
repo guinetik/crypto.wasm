@@ -57,7 +57,7 @@ jobs:
           cp build/crypto_wasm/crypto_wasm_bg.wasm dist/crypto_wasm/
           cp build/crypto_wasm/crypto_wasm.min.js dist/crypto_wasm/
           mkdir -p dist/cli
-          cp target/release/crypto_wasm_cli dist/cli/
+          cp target/release/crypto_cli dist/cli/
 
       # Upload WebAssembly artifacts (using v4)
       - name: Upload WebAssembly artifacts
