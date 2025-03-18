@@ -59,14 +59,19 @@ jobs:
           mkdir -p dist/cli
           cp target/release/crypto_wasm_cli dist/cli/
 
-      # Upload artifacts for the release (using v4)
-      - name: Upload artifacts
+      # Upload WebAssembly artifacts (using v4)
+      - name: Upload WebAssembly artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: release-artifacts
-          path:
-            - dist/crypto_wasm/
-            - dist/cli/
+          name: release-artifacts-wasm
+          path: dist/crypto_wasm/
+
+      # Upload CLI artifacts (using v4)
+      - name: Upload CLI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-cli
+          path: dist/cli/
 
   release:
     runs-on: ubuntu-latest
@@ -77,12 +82,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Download the artifacts
-      - name: Download artifacts
+      # Download WebAssembly artifacts
+      - name: Download WebAssembly artifacts
         uses: actions/download-artifact@v3
         with:
-          name: release-artifacts
-          path: dist/  # Ensure this path matches the upload location
+          name: release-artifacts-wasm
+          path: dist/crypto_wasm/
+
+      # Download CLI artifacts
+      - name: Download CLI artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: release-artifacts-cli
+          path: dist/cli/
 
       # Create a GitHub release
       - name: Create GitHub release
