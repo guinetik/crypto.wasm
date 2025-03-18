@@ -1,5 +1,11 @@
 name: Build and Release
 
+permissions:
+  contents: write
+  packages: write
+  issues: write
+  deployments: write
+
 on:
   push:
     tags:
@@ -45,9 +51,15 @@ jobs:
           terser build/crypto_wasm/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.lib.min.js --compress --mangle
           terser js/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.min.js --compress --mangle
 
-      # Build the CLI app
-      - name: Build CLI
-        run: cargo build --release
+      # Build the Linux CLI app
+      - name: Build Linux CLI
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      # Build the Windows CLI app
+      - name: Build Windows CLI
+        run: |
+          rustup target add x86_64-pc-windows-gnu
+          cargo build --release --target x86_64-pc-windows-gnu
 
       # Package the distribution files
       - name: Package distribution
@@ -57,7 +69,8 @@ jobs:
           cp build/crypto_wasm/crypto_wasm_bg.wasm dist/crypto_wasm/
           cp build/crypto_wasm/crypto_wasm.min.js dist/crypto_wasm/
           mkdir -p dist/cli
-          cp target/release/crypto_cli dist/cli/
+          cp target/x86_64-unknown-linux-gnu/release/crypto_cli dist/cli/crypto_cli-linux
+          cp target/x86_64-pc-windows-gnu/release/crypto_cli.exe dist/cli/crypto_cli.exe
 
       # Upload WebAssembly artifacts (using v4)
       - name: Upload WebAssembly artifacts
@@ -82,14 +95,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Download WebAssembly artifacts
+      # Download WebAssembly artifacts (using v4)
       - name: Download WebAssembly artifacts
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-wasm
           path: dist/crypto_wasm/
 
-      # Download CLI artifacts
+      # Download CLI artifacts (using v4)
       - name: Download CLI artifacts
         uses: actions/download-artifact@v4
         with:
@@ -139,13 +152,24 @@ jobs:
           asset_name: crypto_wasm_bg.wasm
           asset_content_type: application/wasm
 
-      # Upload CLI binary to the release
-      - name: Upload CLI assets
+      # Upload Linux CLI binary to the release
+      - name: Upload Linux CLI assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cli/crypto_wasm_cli
-          asset_name: crypto_wasm_cli
+          asset_path: dist/cli/crypto_wasm_cli-linux
+          asset_name: crypto_wasm_cli-linux
+          asset_content_type: application/octet-stream
+
+      # Upload Windows CLI binary to the release
+      - name: Upload Windows CLI assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/cli/crypto_wasm_cli.exe
+          asset_name: crypto_wasm_cli.exe
           asset_content_type: application/octet-stream
