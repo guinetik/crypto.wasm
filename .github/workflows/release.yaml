@@ -59,14 +59,14 @@ jobs:
           mkdir -p dist/cli
           cp target/release/crypto_wasm_cli dist/cli/
 
-      # Upload artifacts for the release
+      # Upload artifacts for the release (using v4)
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-artifacts
-          path: |
-            dist/crypto_wasm/
-            dist/cli/
+          path:
+            - dist/crypto_wasm/
+            - dist/cli/
 
   release:
     runs-on: ubuntu-latest
