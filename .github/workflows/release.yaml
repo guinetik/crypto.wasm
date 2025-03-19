@@ -1,14 +1,12 @@
+---
 name: Build and Release
-
 permissions:
   contents: write
   packages: write
   issues: write
   deployments: write
-
 on:
-  push:
-
+  push: null
 jobs:
   build-wasm:
     runs-on: ubuntu-latest
@@ -30,9 +28,11 @@ jobs:
       - name: Run tests
         run: cargo test
       - name: Build WebAssembly
-        run: |
+        run: >
           wasm-pack build --target web --out-dir build/crypto_wasm
+
           terser build/crypto_wasm/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.lib.min.js --compress --mangle
+
           terser js/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.min.js --compress --mangle
       - name: Upload WebAssembly artifacts
         uses: actions/upload-artifact@v4
@@ -67,7 +67,9 @@ jobs:
           path: ${{ steps.compile_cli.outputs.BUILT_ARCHIVE }}
   release:
     runs-on: ubuntu-latest
-    needs: [build-wasm, build-native]
+    needs:
+      - build-wasm
+      - build-native
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -87,15 +89,15 @@ jobs:
           name: release-artifacts-wasm
           path: dist/crypto_wasm/
       - name: Download Linux CLI artifacts
-          uses: actions/download-artifact@v4
-          with:
-            name: crypto_cli-x86_64-unknown-linux-musl
-            path: dist/cli/
-        - name: Download Windows CLI artifacts
-          uses: actions/download-artifact@v4
-          with:
-            name: crypto_cli-x86_64-pc-windows-gnu
-            path: dist/cli/
+        uses: actions/download-artifact@v4
+        with:
+          name: crypto_cli-x86_64-unknown-linux-musl
+          path: dist/cli/
+      - name: Download Windows CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: crypto_cli-x86_64-pc-windows-gnu
+          path: dist/cli/
       - name: Upload WebAssembly assets (crypto_wasm.lib.min.js)
         uses: actions/upload-release-asset@v1
         with:
