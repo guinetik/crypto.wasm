@@ -60,12 +60,12 @@ jobs:
             archive: tar.gz tar.xz tar.zst
           - target: x86_64-pc-windows-gnu
             archive: zip
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Compile CLI for ${{ matrix.target }}
+        id: compile
         uses: rust-build/rust-build.action@v1.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,9 +82,11 @@ jobs:
         run: |
           mkdir -p dist
           if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then
-            tar -czvf dist/crypto_cli-linux.tar.gz -C target/${{ matrix.target }}/release crypto_cli
+            echo "Packing Linux binary from ${ steps.compile.outputs.BUILT_ARCHIVE }"
+            tar -czvf dist/crypto_cli-linux.tar.gz -C ${ steps.compile.outputs.BUILT_ARCHIVE } .
           elif [[ "${{ matrix.target }}" == "x86_64-pc-windows-gnu" ]]; then
-            zip -j dist/crypto_cli-windows.zip target/${{ matrix.target }}/release/crypto_cli.exe
+            echo "Packing Windows binary from ${ steps.compile.outputs.BUILT_ARCHIVE }"
+            zip -j dist/crypto_cli-windows.zip ${ steps.compile.outputs.BUILT_ARCHIVE }/*.exe
           fi
 
       - name: Upload CLI artifacts
