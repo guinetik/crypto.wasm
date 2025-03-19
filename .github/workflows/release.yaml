@@ -91,12 +91,12 @@ jobs:
       - name: Download Linux CLI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: crypto_cli-x86_64-unknown-linux-musl.zip
+          name: crypto_cli-x86_64-unknown-linux-musl
           path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.zip
       - name: Download Windows CLI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: crypto_cli-x86_64-pc-windows-gnu.zip
+          name: crypto_cli-x86_64-pc-windows-gnu
           path: dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip
       - name: Upload WebAssembly assets (crypto_wasm.lib.min.js)
         uses: actions/upload-release-asset@v1
