@@ -14,42 +14,33 @@ on:
 jobs:
   build-wasm:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
           components: rustfmt, clippy
-
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
-
       - name: Install wasm-pack
         run: cargo install wasm-pack
-
       - name: Install Terser (for minifying JavaScript)
         run: npm install -g terser
-
       - name: Run tests
         run: cargo test
-
       - name: Build WebAssembly
         run: |
           wasm-pack build --target web --out-dir build/crypto_wasm
           terser build/crypto_wasm/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.lib.min.js --compress --mangle
           terser js/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.min.js --compress --mangle
-
       - name: Upload WebAssembly artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-artifacts-wasm
           path: build/crypto_wasm/
-
   build-native:
     runs-on: ubuntu-latest
     strategy:
@@ -60,11 +51,9 @@ jobs:
             archive: tar.gz tar.xz tar.zst
           - target: x86_64-pc-windows-gnu
             archive: zip
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Compile CLI for ${{ matrix.target }}
         uses: rust-build/rust-build.action@v1.4.5
         env:
@@ -72,28 +61,13 @@ jobs:
         with:
           RUSTTARGET: ${{ matrix.target }}
           ARCHIVE_TYPES: ${{ matrix.archive }}
-
-      - name: Verify built files exist
-        run: |
-          echo "Checking compiled binaries in target/${{ matrix.target }}/release/"
-          ls -lhR target/${{ matrix.target }}/release/
-
-      - name: Package CLI artifacts
-        run: |
-          mkdir -p dist
-          if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then
-            tar -czvf dist/crypto_cli-linux.tar.gz -C ${{ steps.compile.outputs.BUILT_ARCHIVE }}
-          elif [[ "${{ matrix.target }}" == "x86_64-pc-windows-gnu" ]]; then
-            zip -j dist/crypto_cli-windows.zip -C ${{ steps.compile.outputs.BUILT_ARCHIVE }}
-          fi
-
-      - name: Upload CLI artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: release-artifacts-cli-${{ matrix.target }}
-          path: dist/*
-          if-no-files-found: error  # Fail the workflow if the files are missing
-
+          name: crypto_cli-${{ matrix.target }}
+          path: |
+            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
   release:
     runs-on: ubuntu-latest
     needs: [build-wasm, build-native]
@@ -110,7 +84,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          draft: false
+          draft: true
           prerelease: false
 
       - name: Download WebAssembly artifacts
@@ -122,13 +96,13 @@ jobs:
       - name: Download Linux CLI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: release-artifacts-cli-x86_64-unknown-linux-musl
+          name: crypto_cli-x86_64-unknown-linux-musl
           path: dist/cli/
 
       - name: Download Windows CLI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: release-artifacts-cli-x86_64-pc-windows-gnu
+          name: crypto_cli-x86_64-pc-windows-gnu
           path: dist/cli/
 
       - name: Upload WebAssembly assets (crypto_wasm.lib.min.js)
@@ -159,7 +133,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cli/crypto_cli-linux.tar.gz
+          asset_path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.tar.gz
           asset_name: crypto_cli-linux.tar.gz
           asset_content_type: application/gzip
 
@@ -167,6 +141,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cli/crypto_cli-windows.zip
+          asset_path: dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip
           asset_name: crypto_cli-windows.zip
           asset_content_type: application/zip
