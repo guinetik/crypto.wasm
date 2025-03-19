@@ -63,7 +63,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: crypto_cli-${{ matrix.target }}
+          name: crypto_cli-${{ matrix.target }}.zip
           path: ${{ steps.compile_cli.outputs.BUILT_ARCHIVE }}
   release:
     runs-on: ubuntu-latest
