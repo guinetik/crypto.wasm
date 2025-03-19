@@ -83,21 +83,46 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: true
           prerelease: false
+      
+      - name: Download Linux CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: crypto_cli-x86_64-unknown-linux-musl
+          path: dist/cli/crypto_cli-x86_64-unknown-linux-musl
+      - name: Repackage Linux artifact into tar.gz
+        run: tar -czf dist/cli/crypto_cli-x86_64-unknown-linux-musl.tar.gz -C dist/cli crypto_cli-x86_64-unknown-linux-musl/
+      - name: Upload Linux CLI artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.tar.gz
+          asset_name: crypto_cli-linux.zip
+          asset_content_type: application/zip
+      
+      - name: Download Windows CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: crypto_cli-x86_64-pc-windows-gnu
+          path: dist/cli/crypto_cli-x86_64-pc-windows-gnu
+      - name: Zip Windows CLI artifact
+        run: zip -r dist/claci/crypto_cli-x86_64-pc-windows-gnu.zip dist/cli/crypto_cli-x86_64-pc-windows-gnu
+      - name: Upload Windows CLI artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip
+          asset_name: crypto_cli-windows.zip
+          asset_content_type: application/zip
+      
       - name: Download WebAssembly artifacts
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-wasm
           path: dist/crypto_wasm/
-      - name: Download Linux CLI artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: crypto_cli-x86_64-unknown-linux-musl
-          path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.zip
-      - name: Download Windows CLI artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: crypto_cli-x86_64-pc-windows-gnu
-          path: dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip
       - name: Upload WebAssembly assets (crypto_wasm.lib.min.js)
         uses: actions/upload-release-asset@v1
         env:
@@ -125,22 +150,3 @@ jobs:
           asset_path: dist/crypto_wasm/crypto_wasm_bg.wasm
           asset_name: crypto_wasm_bg.wasm
           asset_content_type: application/wasm
-      - name: Upload Windows CLI artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip
-          asset_name: crypto_cli-windows.zip
-          asset_content_type: application/zip
-      - name: Upload Linux CLI artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.zip
-          asset_name: crypto_cli-linux.zip
-          asset_content_type: application/zip
-      
