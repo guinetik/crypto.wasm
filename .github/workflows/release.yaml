@@ -53,6 +53,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Compile CLI for ${{ matrix.target }}
+        id: compile_cli
         uses: rust-build/rust-build.action@v1.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -63,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: crypto_cli-${{ matrix.target }}
-          path: ${{ matrix.target == 'x86_64-unknown-linux-musl' && 'crypto_cli' || 'crypto_cli.exe' }}
+          path: ${{ steps.compile_cli.outputs.BUILT_ARCHIVE }}
   release:
     runs-on: ubuntu-latest
     needs: [build-wasm, build-native]
