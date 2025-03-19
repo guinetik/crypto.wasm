@@ -76,15 +76,15 @@ jobs:
       - name: Verify built files exist
         run: |
           echo "Checking compiled binaries in target/${{ matrix.target }}/release/"
-          ls -lhR target/x86_64-unknown-linux-musl/release/
+          ls -lhR target/${{ matrix.target }}/release/
 
       - name: Package CLI artifacts
         run: |
           mkdir -p dist
           if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then
-            tar -czvf dist/crypto_cli-linux.tar.gz -C target/${{ matrix.target }}/release crypto_cli
+            tar -czvf dist/crypto_cli-linux.tar.gz -C ${{ steps.compile.outputs.BUILT_ARCHIVE }}
           elif [[ "${{ matrix.target }}" == "x86_64-pc-windows-gnu" ]]; then
-            zip -j dist/crypto_cli-windows.zip target/${{ matrix.target }}/release/crypto_cli.exe
+            zip -j dist/crypto_cli-windows.zip -C ${{ steps.compile.outputs.BUILT_ARCHIVE }}
           fi
 
       - name: Upload CLI artifacts
