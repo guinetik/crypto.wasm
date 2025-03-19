@@ -8,8 +8,6 @@ permissions:
 
 on:
   push:
-    tags:
-      - "v*" # Triggers on tag push (e.g., v1.0.0)
 
 jobs:
   build-wasm:
@@ -91,18 +89,6 @@ jobs:
           name: release-artifacts-wasm
           path: dist/crypto_wasm/
 
-      - name: Download Linux CLI artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: crypto_cli-x86_64-unknown-linux-musl
-          path: dist/cli/
-
-      - name: Download Windows CLI artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: crypto_cli-x86_64-pc-windows-gnu
-          path: dist/cli/
-
       - name: Upload WebAssembly assets (crypto_wasm.lib.min.js)
         uses: actions/upload-release-asset@v1
         with:
@@ -126,6 +112,18 @@ jobs:
           asset_path: dist/crypto_wasm/crypto_wasm_bg.wasm
           asset_name: crypto_wasm_bg.wasm
           asset_content_type: application/wasm
+
+      - name: Download Linux CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: crypto_cli-x86_64-unknown-linux-musl
+          path: dist/cli/
+
+      - name: Download Windows CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: crypto_cli-x86_64-pc-windows-gnu
+          path: dist/cli/
 
       - name: Upload Linux CLI artifact
         uses: actions/upload-release-asset@v1
