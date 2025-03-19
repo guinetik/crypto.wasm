@@ -73,13 +73,17 @@ jobs:
           RUSTTARGET: ${{ matrix.target }}
           ARCHIVE_TYPES: ${{ matrix.archive }}
 
+      - name: Verify built files exist
+        run: |
+          echo "Checking compiled binaries in target/${{ matrix.target }}/release/"
+          ls -lh target/${{ matrix.target }}/release/
+
       - name: Upload CLI artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-artifacts-cli-${{ matrix.target }}
-          path: |
-            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
+          path: target/${{ matrix.target }}/release/crypto_cli*
+          if-no-files-found: error  # Fail the workflow if the files are missing
 
   release:
     runs-on: ubuntu-latest
