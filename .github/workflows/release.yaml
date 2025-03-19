@@ -78,11 +78,20 @@ jobs:
           echo "Checking compiled binaries in target/${{ matrix.target }}/release/"
           ls -lh target/${{ matrix.target }}/release/
 
+      - name: Package CLI artifacts
+        run: |
+          mkdir -p dist
+          if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then
+            tar -czvf dist/crypto_cli-linux.tar.gz -C target/${{ matrix.target }}/release crypto_cli
+          elif [[ "${{ matrix.target }}" == "x86_64-pc-windows-gnu" ]]; then
+            zip -j dist/crypto_cli-windows.zip target/${{ matrix.target }}/release/crypto_cli.exe
+          fi
+
       - name: Upload CLI artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-artifacts-cli-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/crypto_cli*
+          path: dist/*
           if-no-files-found: error  # Fail the workflow if the files are missing
 
   release:
@@ -122,7 +131,7 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload WebAssembly assets (lib.min.js)
+      - name: Upload WebAssembly assets (crypto_wasm.lib.min.js)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -132,7 +141,7 @@ jobs:
           asset_name: crypto_wasm.lib.min.js
           asset_content_type: application/javascript
 
-      - name: Upload WebAssembly assets (min.js)
+      - name: Upload WebAssembly assets (crypto_wasm.min.js)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -142,7 +151,7 @@ jobs:
           asset_name: crypto_wasm.min.js
           asset_content_type: application/javascript
 
-      - name: Upload WebAssembly assets (wasm)
+      - name: Upload WebAssembly assets (crypto_wasm_bg.wasm)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -151,3 +160,12 @@ jobs:
           asset_path: dist/crypto_wasm/crypto_wasm_bg.wasm
           asset_name: crypto_wasm_bg.wasm
           asset_content_type: application/wasm
+
+      - name: Extract Linux CLI artifact
+        run: |
+          ls -lh dist/cli/  # Debugging step
+          tar -xvf dist/cli/crypto_cli-linux.tar.gz -C dist/cli/
+
+      - name: Extract Windows CLI artifact
+        run: unzip dist/cli/crypto_cli-windows.zip -d dist/cli/
+
