@@ -102,6 +102,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
       - name: Download WebAssembly artifacts
         uses: actions/download-artifact@v4
         with:
@@ -120,21 +131,8 @@ jobs:
           name: release-artifacts-cli-x86_64-pc-windows-gnu
           path: dist/cli/
 
-      - name: Create GitHub release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
       - name: Upload WebAssembly assets (crypto_wasm.lib.min.js)
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/crypto_wasm/crypto_wasm.lib.min.js
@@ -143,8 +141,6 @@ jobs:
 
       - name: Upload WebAssembly assets (crypto_wasm.min.js)
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/crypto_wasm/crypto_wasm.min.js
@@ -153,19 +149,24 @@ jobs:
 
       - name: Upload WebAssembly assets (crypto_wasm_bg.wasm)
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/crypto_wasm/crypto_wasm_bg.wasm
           asset_name: crypto_wasm_bg.wasm
           asset_content_type: application/wasm
 
-      - name: Extract Linux CLI artifact
-        run: |
-          ls -lh dist/cli/  # Debugging step
-          tar -xvf dist/cli/crypto_cli-linux.tar.gz -C dist/cli/
-  
-      - name: Extract Windows CLI artifact
-        run: unzip dist/cli/crypto_cli-windows.zip -d dist/cli/
+      - name: Upload Linux CLI artifact
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/cli/crypto_cli-linux.tar.gz
+          asset_name: crypto_cli-linux.tar.gz
+          asset_content_type: application/gzip
 
+      - name: Upload Windows CLI artifact
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/cli/crypto_cli-windows.zip
+          asset_name: crypto_cli-windows.zip
+          asset_content_type: application/zip
