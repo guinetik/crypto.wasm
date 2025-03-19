@@ -6,7 +6,9 @@ permissions:
   issues: write
   deployments: write
 on:
-  push: null
+  push:
+    tags:
+      - "v*"
 jobs:
   build-wasm:
     runs-on: ubuntu-latest
