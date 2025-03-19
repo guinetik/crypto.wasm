@@ -107,7 +107,7 @@ jobs:
           name: crypto_cli-x86_64-pc-windows-gnu
           path: dist/cli/crypto_cli-x86_64-pc-windows-gnu
       - name: Zip Windows CLI artifact
-        run: zip -r dist/claci/crypto_cli-x86_64-pc-windows-gnu.zip dist/cli/crypto_cli-x86_64-pc-windows-gnu
+        run: zip -r dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip dist/cli/crypto_cli-x86_64-pc-windows-gnu
       - name: Upload Windows CLI artifact
         uses: actions/upload-release-asset@v1
         env:
