@@ -91,8 +91,8 @@ jobs:
       - name: Download Linux CLI artifacts
         uses: actions/download-artifact@v4
         with:
-          name: crypto_cli-x86_64-unknown-linux-musl.tar.gz
-          path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.tar.gz
+          name: crypto_cli-x86_64-unknown-linux-musl.zip
+          path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.zip
       - name: Download Windows CLI artifacts
         uses: actions/download-artifact@v4
         with:
