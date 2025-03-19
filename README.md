@@ -2,6 +2,8 @@
 
 This is a **study-focused WebAssembly library** designed to explore the bridge between WebAssembly (Wasm) and JavaScript. It provides a simple interface to encrypt and decrypt data using **AES-128/CBC/PKCS7** and **Base64** encoding. The library is written in Rust and compiled to WebAssembly, with a JavaScript bridge to interact with the Wasm module.
 
+[![Build and Release](https://github.com/guinetik/crypto.wasm/actions/workflows/release.yaml/badge.svg?branch=master)](https://github.com/guinetik/crypto.wasm/actions/workflows/release.yaml)
+
 ---
 
 ## Demo
