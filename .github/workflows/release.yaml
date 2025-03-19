@@ -131,9 +131,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.tar.gz
-          asset_name: crypto_cli-linux.tar.gz
-          asset_content_type: application/gzip
+          asset_path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.zip
+          asset_name: crypto_cli-linux.zip
+          asset_content_type: application/zip
       - name: Upload Windows CLI artifact
         uses: actions/upload-release-asset@v1
         env:
