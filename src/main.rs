@@ -5,13 +5,13 @@ fn main() {
     let matches = Command::new("crypto_cli")
         .version("0.1.0")
         .author("Guinetik <guinetik@gmail.com>")
-        .about("Encrypts or decrypts data using AES-128 or Base64")
+        .about("Encrypts or decrypts data using various algorithms")
         .arg(
             Arg::new("encryptor")
                 .long("encryptor")
                 .short('e')
                 .value_name("ENCRYPTOR")
-                .help("The encryptor to use (aes128 or base64)")
+                .help("The encryptor to use (aes128, xor, caesar, base64, rot13)")
                 .value_parser(value_parser!(String))
                 .required(true),
         )
@@ -20,7 +20,7 @@ fn main() {
                 .long("key")
                 .short('k')
                 .value_name("KEY")
-                .help("The secret key (required for AES-128)")
+                .help("The secret key (16 chars for AES-128, any for XOR, 1-25 for Caesar)")
                 .value_parser(value_parser!(String)),
         )
         .arg(
@@ -45,19 +45,39 @@ fn main() {
     let encryptor_type = match matches.get_one::<String>("encryptor").unwrap().as_str() {
         "aes128" => EncryptorType::Aes128,
         "base64" => EncryptorType::Base64,
+        "rot13" => EncryptorType::Rot13,
+        "xor" => EncryptorType::Xor,
+        "caesar" => EncryptorType::Caesar,
         _ => {
-            eprintln!("Invalid encryptor type. Use 'aes128' or 'base64'.");
+            eprintln!("Invalid encryptor type. Use 'aes128', 'xor', 'caesar', 'base64', or 'rot13'.");
             std::process::exit(1);
         }
     };
 
-    // Parse key (optional for Base64)
+    // Parse key (optional for Base64 and ROT13)
     let key = matches.get_one::<String>("key").cloned().unwrap_or_default();
 
-    // Validate key for AES-128
-    if encryptor_type == EncryptorType::Aes128 && key.is_empty() {
-        eprintln!("A key is required for AES-128 encryption.");
-        std::process::exit(1);
+    // Validate key based on encryptor type
+    match encryptor_type {
+        EncryptorType::Aes128 if key.is_empty() => {
+            eprintln!("A key is required for AES-128 encryption.");
+            std::process::exit(1);
+        }
+        EncryptorType::Xor if key.is_empty() => {
+            eprintln!("A key is required for XOR encryption.");
+            std::process::exit(1);
+        }
+        EncryptorType::Caesar => {
+            if key.is_empty() {
+                eprintln!("A shift value (1-25) is required for Caesar cipher.");
+                std::process::exit(1);
+            }
+            if key.parse::<u8>().map(|n| n < 1 || n > 25).unwrap_or(true) {
+                eprintln!("Caesar shift must be a number between 1 and 25.");
+                std::process::exit(1);
+            }
+        }
+        _ => {}
     }
 
     // Parse input

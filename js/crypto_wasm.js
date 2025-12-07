@@ -2,7 +2,7 @@
  * CryptoWasm JavaScript Wrapper
  *
  * A wrapper for the crypto.wasm WebAssembly module providing
- * AES-128/CBC/PKCS7 encryption and Base64 encoding functionality.
+ * AES-128/CBC/PKCS7 encryption, XOR cipher, Caesar cipher, Base64 encoding, and ROT13.
  *
  * @module crypto_wasm
  */

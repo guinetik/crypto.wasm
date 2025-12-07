@@ -1,6 +1,6 @@
 /**
  * TypeScript declarations for crypto.wasm
- * A WebAssembly library for AES-128/CBC/PKCS7 encryption and Base64 encoding
+ * A WebAssembly library for AES-128/CBC/PKCS7 encryption, XOR, Caesar, Base64, and ROT13
  */
 
 /**
@@ -11,6 +11,12 @@ export enum EncryptorType {
     Aes128 = 0,
     /** Base64 encoding (not actual encryption) */
     Base64 = 1,
+    /** ROT13 letter substitution */
+    Rot13 = 2,
+    /** XOR cipher (any length key) */
+    Xor = 3,
+    /** Caesar cipher (shift 1-25) */
+    Caesar = 4,
 }
 
 /**

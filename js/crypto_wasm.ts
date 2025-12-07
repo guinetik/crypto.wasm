@@ -13,6 +13,9 @@
 export const EncryptorTypeValues = {
   Aes128: 0,
   Base64: 1,
+  Rot13: 2,
+  Xor: 3,
+  Caesar: 4,
 } as const;
 
 export type EncryptorTypeValue =
@@ -40,6 +43,9 @@ export interface ICryptoWasmConstructor {
 export interface IEncryptorType {
   Aes128: EncryptorTypeValue;
   Base64: EncryptorTypeValue;
+  Rot13: EncryptorTypeValue;
+  Xor: EncryptorTypeValue;
+  Caesar: EncryptorTypeValue;
 }
 
 /**

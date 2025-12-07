@@ -1,6 +1,6 @@
 {
   "name": "@guinetik/crypto-wasm",
-  "version": "1.0.5",
+  "version": "1.0.71",
   "description": "AES-128/PKCS7 encryption on the browser using WebAssembly",
   "main": "./js/crypto_wasm.js",
   "module": "./js/crypto_wasm.js",
