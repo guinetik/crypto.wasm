@@ -2,7 +2,7 @@
 name = "crypto_wasm"
 description = "AES-128/PKCS7 encryption on the browser"
 authors = ["Guinetik <guinetik@gmail.com>"]
-version = "1.0.1"
+version = "1.0.72"
 edition = "2021"
 readme = "README.md"
 keywords = ["rust", "crypto", "cli"]
