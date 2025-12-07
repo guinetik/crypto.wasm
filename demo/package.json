@@ -11,7 +11,7 @@
     "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
-    "@guinetik/crypto-wasm": "^1.0.5"
+    "@guinetik/crypto-wasm": "^1.0.71"
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",

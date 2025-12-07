@@ -68,9 +68,25 @@ const hideStatus = (): void => {
 };
 
 const updateKeyLengthIndicator = (): void => {
-  const length = elements.secretKey.value.length;
-  elements.keyLength.textContent = `${length}/16`;
-  elements.keyLength.className = `key-length ${length === 16 ? 'valid' : 'invalid'}`;
+  const type = elements.encryptorType.value;
+  const value = elements.secretKey.value;
+  const length = value.length;
+
+  if (type === 'aes128') {
+    elements.keyLength.textContent = `${length}/16`;
+    elements.keyLength.className = `key-length ${length === 16 ? 'valid' : 'invalid'}`;
+  } else if (type === 'xor') {
+    elements.keyLength.textContent = `${length} chars`;
+    elements.keyLength.className = `key-length ${length > 0 ? 'valid' : 'invalid'}`;
+  } else if (type === 'caesar') {
+    const shift = parseInt(value, 10);
+    const isValid = !isNaN(shift) && shift >= 1 && shift <= 25;
+    elements.keyLength.textContent = isValid ? `shift ${shift}` : 'invalid';
+    elements.keyLength.className = `key-length ${isValid ? 'valid' : 'invalid'}`;
+  } else {
+    elements.keyLength.textContent = '';
+    elements.keyLength.className = 'key-length';
+  }
 };
 
 const flashButton = (button: HTMLButtonElement, className: string): void => {
@@ -87,6 +103,13 @@ const copyToClipboard = async (text: string, button: HTMLButtonElement): Promise
   }
 };
 
+// Validation for ROT13 - only ASCII printable characters
+const isValidRot13Input = (text: string): boolean => {
+  // Allow ASCII printable characters (32-126) which includes:
+  // letters, numbers, punctuation, and space
+  return /^[\x20-\x7E]*$/.test(text);
+};
+
 // Crypto Functions
 const createCryptoInstance = (): CryptoInstance | null => {
   if (!wasmInitialized) {
@@ -97,16 +120,37 @@ const createCryptoInstance = (): CryptoInstance | null => {
   const type = elements.encryptorType.value;
   const key = elements.secretKey.value;
 
+  // Validate key based on algorithm
   if (type === 'aes128' && key.length !== 16) {
     showStatus('Secret key must be exactly 16 characters for AES-128', 'error');
     return null;
   }
+  if (type === 'xor' && key.length === 0) {
+    showStatus('XOR cipher requires a non-empty key', 'error');
+    return null;
+  }
+  if (type === 'caesar') {
+    const shift = parseInt(key, 10);
+    if (isNaN(shift) || shift < 1 || shift > 25) {
+      showStatus('Caesar cipher requires a shift between 1 and 25', 'error');
+      return null;
+    }
+  }
 
   try {
     hideStatus();
-    const encType = type === 'aes128'
-      ? EncryptorType.Aes128
-      : EncryptorType.Base64;
+    let encType;
+    if (type === 'aes128') {
+      encType = EncryptorType.Aes128;
+    } else if (type === 'rot13') {
+      encType = EncryptorType.Rot13;
+    } else if (type === 'xor') {
+      encType = EncryptorType.Xor;
+    } else if (type === 'caesar') {
+      encType = EncryptorType.Caesar;
+    } else {
+      encType = EncryptorType.Base64;
+    }
     return new CryptoWasm(key, encType);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -119,6 +163,12 @@ const encrypt = (): void => {
   const input = elements.inputToken.value.trim();
   if (!input) {
     showStatus('Please enter text to encrypt', 'error');
+    return;
+  }
+
+  // Validate ROT13 input
+  if (elements.encryptorType.value === 'rot13' && !isValidRot13Input(input)) {
+    showStatus('ROT13 only supports ASCII characters (letters, numbers, punctuation)', 'error');
     return;
   }
 
@@ -141,6 +191,12 @@ const decrypt = (): void => {
   const input = elements.inputToken.value.trim();
   if (!input) {
     showStatus('Please enter text to decrypt', 'error');
+    return;
+  }
+
+  // Validate ROT13 input
+  if (elements.encryptorType.value === 'rot13' && !isValidRot13Input(input)) {
+    showStatus('ROT13 only supports ASCII characters (letters, numbers, punctuation)', 'error');
     return;
   }
 
@@ -170,7 +226,30 @@ const setupEventListeners = (): void => {
   // Encryptor type change
   elements.encryptorType.addEventListener('change', (e) => {
     const target = e.target as HTMLSelectElement;
-    elements.keyGroup.style.display = target.value === 'base64' ? 'none' : 'flex';
+    const keyLabel = elements.keyGroup.querySelector('.form-label') as HTMLLabelElement;
+
+    // Hide key for Base64 and ROT13
+    if (target.value === 'base64' || target.value === 'rot13') {
+      elements.keyGroup.style.display = 'none';
+    } else {
+      elements.keyGroup.style.display = 'flex';
+
+      // Update label based on algorithm
+      if (target.value === 'aes128') {
+        keyLabel.textContent = 'Secret Key (16 characters)';
+        elements.secretKey.placeholder = 'Enter 16-character key';
+        elements.secretKey.value = 'thisisasecretkey';
+      } else if (target.value === 'xor') {
+        keyLabel.textContent = 'XOR Key (any length)';
+        elements.secretKey.placeholder = 'Enter any key';
+        elements.secretKey.value = 'secret';
+      } else if (target.value === 'caesar') {
+        keyLabel.textContent = 'Shift (1-25)';
+        elements.secretKey.placeholder = 'Enter shift number';
+        elements.secretKey.value = '3';
+      }
+      updateKeyLengthIndicator();
+    }
   });
 
   // Key input

@@ -23,7 +23,8 @@ yarn-debug.log*
 yarn-error.log*
 .npm
 .yarn
-package-lock.json
+# Keep demo's lock file for CI
+!demo/package-lock.json
 yarn.lock
 
 # Build artifacts
@@ -47,3 +48,5 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+dist
