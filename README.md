@@ -8,7 +8,9 @@ This is a **study-focused WebAssembly library** designed to explore the bridge b
 
 ## Demo
 
-https://guinetik.github.io/crypto.wasm/
+![Demo Screenshot](demo.png)
+
+https://cryptowasm.guinetik.com
 
 ---
 
