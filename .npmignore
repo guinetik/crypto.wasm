@@ -1,0 +1,71 @@
+# Source files
+src/
+tests/
+target/
+build/
+
+# Development files
+*.rs
+*.rs.bk
+*.pdb
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Documentation (keep README.md and LICENSE)
+docs/
+
+# Build scripts
+build.ps1
+build.sh
+*.bat
+
+# Demo files
+index.html
+css/
+CNAME
+
+# Development configs
+tsconfig.json
+.editorconfig
+.eslintrc*
+.prettierrc*
+
+# Environment
+.env
+.env.*
+.env.local
+
+# Node dev files
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Rust files
+Cargo.lock
+Cargo.toml
+

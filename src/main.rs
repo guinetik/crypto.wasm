@@ -4,7 +4,7 @@ use crypto_wasm::crypto::{CryptoWasm, EncryptorType};
 fn main() {
     let matches = Command::new("crypto_cli")
         .version("0.1.0")
-        .author("Your Name <your.email@example.com>")
+        .author("Guinetik <guinetik@gmail.com>")
         .about("Encrypts or decrypts data using AES-128 or Base64")
         .arg(
             Arg::new("encryptor")

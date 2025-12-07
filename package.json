@@ -1,0 +1,70 @@
+{
+  "name": "@guinetik/crypto-wasm",
+  "version": "1.0.5",
+  "description": "AES-128/PKCS7 encryption on the browser using WebAssembly",
+  "main": "./js/crypto_wasm.js",
+  "module": "./js/crypto_wasm.js",
+  "types": "./js/crypto_wasm.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build:wasm": "wasm-pack build --target web --out-dir build/crypto_wasm",
+    "build:ts": "tsc --noEmit",
+    "build:minify": "terser build/crypto_wasm/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.lib.min.js --compress --mangle && terser js/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.min.js --compress --mangle",
+    "build:dist": "node -e \"const fs=require('fs');if(!fs.existsSync('dist/crypto_wasm'))fs.mkdirSync('dist/crypto_wasm',{recursive:true});fs.copyFileSync('build/crypto_wasm/crypto_wasm.lib.min.js','dist/crypto_wasm/crypto_wasm.lib.min.js');fs.copyFileSync('build/crypto_wasm/crypto_wasm_bg.wasm','dist/crypto_wasm/crypto_wasm_bg.wasm');fs.copyFileSync('build/crypto_wasm/crypto_wasm.min.js','dist/crypto_wasm/crypto_wasm.min.js');fs.copyFileSync('js/crypto_wasm.d.ts','dist/crypto_wasm/crypto_wasm.d.ts');\"",
+    "build": "npm run build:wasm && npm run build:minify && npm run build:dist",
+    "prepublishOnly": "npm run build && npm run typecheck",
+    "test": "cargo test",
+    "typecheck": "tsc --noEmit",
+    "clean": "node -e \"const fs=require('fs');const rm=p=>{if(fs.existsSync(p))fs.rmSync(p,{recursive:true})};rm('build');rm('dist/crypto_wasm');\""
+  },
+  "keywords": [
+    "wasm",
+    "webassembly",
+    "crypto",
+    "aes",
+    "aes-128",
+    "encryption",
+    "decryption",
+    "base64",
+    "rust"
+  ],
+  "author": "Guinetik <guinetik@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/guinetik/crypto.wasm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/guinetik/crypto.wasm/issues"
+  },
+  "homepage": "https://github.com/guinetik/crypto.wasm#readme",
+  "devDependencies": {
+    "terser": "^5.27.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./js/crypto_wasm.js",
+      "require": "./js/crypto_wasm.js",
+      "types": "./js/crypto_wasm.d.ts"
+    },
+    "./wasm": {
+      "import": "./dist/crypto_wasm/crypto_wasm.lib.min.js",
+      "types": "./js/crypto_wasm.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@guinetik/crypto-wasm": "^1.0.5"
+  }
+}

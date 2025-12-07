@@ -109,6 +109,51 @@ The final package will be located in the `dist/crypto_wasm` directory.
 
 ## Usage
 
+### TypeScript Integration
+
+This library includes full TypeScript support with type definitions.
+
+1. Install the package (or include it in your project):
+
+   ```bash
+   npm install crypto-wasm
+   ```
+
+2. Import and use with full type safety:
+
+   ```typescript
+   import { CryptoWasmWrapper } from "crypto-wasm";
+
+   // Initialize the wrapper
+   const wrapper = new CryptoWasmWrapper();
+   await wrapper.init("./dist/crypto_wasm/crypto_wasm.lib.min.js");
+
+   // Use convenience methods for quick encryption/decryption
+   const encrypted = wrapper.encryptAes128("my secret token", "thisisasecretkey");
+   console.log("Encrypted:", encrypted);
+
+   const decrypted = wrapper.decryptAes128(encrypted, "thisisasecretkey");
+   console.log("Decrypted:", decrypted);
+
+   // Or create a reusable CryptoWasm instance
+   const crypto = wrapper.createCrypto("thisisasecretkey", wrapper.EncryptorType.Aes128);
+   const encrypted2 = crypto.cypher("another secret");
+   const decrypted2 = crypto.decypher(encrypted2);
+
+   // Don't forget to free memory when done
+   crypto.free();
+   ```
+
+3. Base64 encoding/decoding:
+
+   ```typescript
+   const encoded = wrapper.encodeBase64("Hello, World!");
+   console.log("Encoded:", encoded); // SGVsbG8sIFdvcmxkIQ==
+
+   const decoded = wrapper.decodeBase64(encoded);
+   console.log("Decoded:", decoded); // Hello, World!
+   ```
+
 ### JavaScript Integration
 
 1. Include the generated wrapper file in your html file:
@@ -204,13 +249,35 @@ Decrypted: Hello, World!
 ## Project Structure
 
 - **`src/lib.rs`**: Contains the Rust implementation of AES-128 and Base64 operations.
+- **`src/crypto.rs`**: Core crypto module with `CryptoWasm` class and `Encryptor` trait.
 - **`src/main.rs`**: Implements the CLI interface.
 - **`js/crypto_wasm.js`**: JavaScript bridge for interacting with the Wasm module.
+- **`js/crypto_wasm.ts`**: TypeScript version of the JavaScript bridge.
+- **`js/crypto_wasm.d.ts`**: TypeScript declaration file with full type definitions.
 - **`build.ps1`**: PowerShell script for automating the build process on Windows.
+- **`package.json`**: Node.js package configuration with npm scripts.
+- **`tsconfig.json`**: TypeScript compiler configuration.
 - **`dist/crypto_wasm/`**: Contains the final distribution files:
   - `crypto_wasm.lib.min.js`: Minified WebAssembly loader.
   - `crypto_wasm.min.js`: Minified JavaScript bridge.
   - `crypto_wasm_bg.wasm`: Compiled WebAssembly module.
+  - `crypto_wasm.d.ts`: TypeScript declaration file.
+
+---
+
+## TypeScript Support
+
+This project includes full TypeScript support:
+
+- **Type Definitions**: Complete `.d.ts` files for all exports
+- **JSDoc Comments**: Full documentation in both JS and TS files
+- **Type Safety**: Strict TypeScript configuration for development
+
+To run TypeScript type checking:
+
+```bash
+npm run typecheck
+```
 
 ---
 
