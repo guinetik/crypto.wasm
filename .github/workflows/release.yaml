@@ -1,0 +1,154 @@
+---
+name: Build and Release
+permissions:
+  contents: write
+  packages: write
+  issues: write
+  deployments: write
+on:
+  push:
+    tags:
+      - "v*"
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+      - name: Install Terser (for minifying JavaScript)
+        run: npm install -g terser
+      - name: Run tests
+        run: cargo test
+      - name: Build WebAssembly
+        run: >
+          wasm-pack build --target web --out-dir build/crypto_wasm
+
+          terser build/crypto_wasm/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.lib.min.js --compress --mangle
+
+          terser js/crypto_wasm.js -o build/crypto_wasm/crypto_wasm.min.js --compress --mangle
+      - name: Upload WebAssembly artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-wasm
+          path: build/crypto_wasm/
+  build-native:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            archive: tar.gz tar.xz tar.zst
+          - target: x86_64-pc-windows-gnu
+            archive: zip
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Compile CLI for ${{ matrix.target }}
+        id: compile_cli
+        uses: rust-build/rust-build.action@v1.4.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          RUSTTARGET: ${{ matrix.target }}
+          ARCHIVE_TYPES: ${{ matrix.archive }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crypto_cli-${{ matrix.target }}
+          path: ${{ steps.compile_cli.outputs.BUILT_ARCHIVE }}
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build-wasm
+      - build-native
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: false
+      
+      - name: Download Linux CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: crypto_cli-x86_64-unknown-linux-musl
+          path: dist/cli/crypto_cli-x86_64-unknown-linux-musl
+      - name: Repackage Linux artifact into tar.gz
+        run: tar -czf dist/cli/crypto_cli-x86_64-unknown-linux-musl.tar.gz -C dist/cli crypto_cli-x86_64-unknown-linux-musl/
+      - name: Upload Linux CLI artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/cli/crypto_cli-x86_64-unknown-linux-musl.tar.gz
+          asset_name: crypto_cli-linux.zip
+          asset_content_type: application/zip
+      
+      - name: Download Windows CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: crypto_cli-x86_64-pc-windows-gnu
+          path: dist/cli/crypto_cli-x86_64-pc-windows-gnu
+      - name: Zip Windows CLI artifact
+        run: zip -r dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip dist/cli/crypto_cli-x86_64-pc-windows-gnu
+      - name: Upload Windows CLI artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/cli/crypto_cli-x86_64-pc-windows-gnu.zip
+          asset_name: crypto_cli-windows.zip
+          asset_content_type: application/zip
+      
+      - name: Download WebAssembly artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-wasm
+          path: dist/crypto_wasm/
+      - name: Upload WebAssembly assets (crypto_wasm.lib.min.js)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/crypto_wasm/crypto_wasm.lib.min.js
+          asset_name: crypto_wasm.lib.min.js
+          asset_content_type: application/javascript
+      - name: Upload WebAssembly assets (crypto_wasm.min.js)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/crypto_wasm/crypto_wasm.min.js
+          asset_name: crypto_wasm.min.js
+          asset_content_type: application/javascript
+      - name: Upload WebAssembly assets (crypto_wasm_bg.wasm)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/crypto_wasm/crypto_wasm_bg.wasm
+          asset_name: crypto_wasm_bg.wasm
+          asset_content_type: application/wasm
